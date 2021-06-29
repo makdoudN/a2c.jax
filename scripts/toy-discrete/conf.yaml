@@ -1,0 +1,38 @@
+seed: 42
+name: A2C-Discrete
+outputs: outputs
+maxsteps: 1000000
+nepochs: 100
+env: CartPole-v0
+num_envs: 8
+
+policy_opt: adabelief
+policy_opt_kwargs:
+  learning_rate: 5e-3
+value_opt: adabelief
+value_opt_kwargs:
+  learning_rate: 5e-3
+policy_kwargs:
+  hidden_sizes:
+    - 32
+    - 32
+value_kwargs:
+  hidden_sizes:
+    - 32
+    - 32
+
+
+# Related to A2C.
+horizon: 10
+reward_scaling: 1.0
+lambda_: 0.95
+discount_factor: 0.99
+value_cost: 0.5
+entropy_cost: 0.001
+
+# -- Hydra Configuration.
+
+hydra:
+  run:
+    dir: outputs/${name}/${env}/${now:%Y.%m.%d}-${now:%H.%M.%S}-seed-${seed}
+

@@ -43,10 +43,6 @@ class State:
     opt_state: chex.ArrayTree
 
 
-# TODO: @jit ?
-# TODO: Enable continuous/discrete action
-# discrete action A: {H, E}
-# continuous action A: {H, E, .}
 def process_data(
     params: typing.Dict[str, typing.Any],
     data: Data,
@@ -84,6 +80,7 @@ def process_data(
                  advantage=advantage)
 
 
+@partial(jit, static_argnums=(2, 3, 4, 5))
 def loss_fn(
     params: typing.Dict[str, typing.Any],
     batch: Batch,
@@ -91,12 +88,8 @@ def loss_fn(
     value_apply: typing.Callable,
     value_cost: float = 0.5,
     entropy_cost: float = 1e-4,
-    ppo_epsilon: float = 0.3,
-
 ):
     """Compute the PPO Loss Function."""
-
-    # -- Initialization
     value_params = params['value']
     policy_params = params['policy']
 
@@ -116,7 +109,7 @@ def loss_fn(
     loss_V = rlax.l2_loss(vf, batch.returns).mean()
     loss = loss_policy + value_cost * loss_V
 
-    metrics = dict(ppo_loss=loss, policy_loss=loss_PI, value_loss=loss_V, H_loss=loss_H)
+    metrics = dict(a2c_loss=loss, policy_loss=loss_PI, value_loss=loss_V, H_loss=loss_H)
     return loss, metrics
 
 
