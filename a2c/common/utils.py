@@ -4,7 +4,6 @@ import numpy as np
 
 def evaluation(rng, env, policy, niters: int = 5):
     action_type = env.action_space.__class__.__name__
-    
     all_scores = []
     for _ in range(niters):
         observation, score = env.reset(), 0
@@ -17,7 +16,7 @@ def evaluation(rng, env, policy, niters: int = 5):
                 action = np.asarray(action)
             observation, reward, done, info = env.step(action)
             score += reward
-            if done: 
+            if done:
                 break
         all_scores.append(score)
     info = {}
