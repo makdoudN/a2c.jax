@@ -1,0 +1,28 @@
+# @package _global_
+#
+env: Pendulum-v0
+entropy_cost: 0.1
+value_cost: 1.0
+horizon: 20
+lambda_: 0.99
+
+policy_kwargs:
+  logstd_max: 10.0
+  logstd_min: -10.0
+  hidden_sizes:
+    - 64
+    - 64
+  activation: silu
+  fixed_std_value: 1.0
+  fixed_std: False
+  state_dependent_std: True
+  use_tanh_bijector: False
+
+
+policy_opt: rmsprop
+policy_opt_kwargs:
+  learning_rate: 0.001
+
+value_opt: rmsprop 
+value_opt_kwargs:
+  learning_rate: 0.0005

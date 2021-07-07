@@ -21,7 +21,7 @@ def save_conf(conf: OmegaConf, rec) -> None:
     rec.save(yaml.safe_load(yconf), "conf.yaml")
 
 
-@hydra.main(config_path=".", config_name="conf")
+@hydra.main(config_path="conf", config_name="conf")
 def main(conf):
     rng = jax.random.PRNGKey(conf.seed)
     rec = Recorder(output_dir=".")
@@ -41,6 +41,7 @@ def main(conf):
         info_eval = a2c_info['evaluation'](rng_eval, state.params['policy'])
         info = S.get()
         info.update(info_eval)
+        info['epoch'] = e
         print(info)
 
 
