@@ -1,18 +1,17 @@
 """A2C Core functions"""
 
 import jax
-import chex
 import rlax
-import tree
-import numpy as np
+import chex
+import optax
 import jax.numpy as jnp
 import typing
 
 from jax import jit
 from jax import vmap
-from jax import grad
 from jax import partial
 from rlax import truncated_generalized_advantage_estimation
+from jax.experimental.optimizers import clip_grads
 
 vmap_gae = vmap(truncated_generalized_advantage_estimation, (1, 1, None, 1), 1)
 
@@ -81,7 +80,7 @@ def process_data(
 
 
 @partial(jit, static_argnums=(2, 3, 4, 5))
-def loss_fn(
+def loss_a2c_def(
     params: typing.Dict[str, typing.Any],
     batch: Batch,
     policy_apply: typing.Callable,
@@ -89,7 +88,7 @@ def loss_fn(
     value_cost: float = 0.5,
     entropy_cost: float = 1e-4,
 ):
-    """Compute the PPO Loss Function."""
+    """Compute the A2C Loss Function."""
     value_params = params['value']
     policy_params = params['policy']
 
@@ -113,3 +112,28 @@ def loss_fn(
     return loss, metrics
 
 
+@partial(jit, static_argnums=(2, 3, 4, 5, 6))
+def update_a2c(
+    state: State,
+    data: Batch,
+    policy_opt: optax.TransformUpdateFn,
+    value_opt: optax.TransformUpdateFn,
+    loss_kwargs: dict,
+    process_data_kwargs: dict,
+    max_grad_norm: float = -1.
+):
+    batch = partial(process_data, **process_data_kwargs)(state.params, data)
+    loss_fn = partial(loss_a2c_def, **loss_kwargs)
+    grad, metrics = jax.grad(loss_fn, has_aux=True)(state.params, batch)
+    if max_grad_norm > 0.0:
+        grad = clip_grads(grad, max_grad_norm)
+    updates, value_opt_state = value_opt(grad['value'], state.opt_state['value'])
+    value_params = jax.tree_multimap(lambda p, u: p + u, state.params['value'], updates)
+    updates, policy_opt_state = policy_opt(grad['policy'], state.opt_state['policy'])
+    policy_params = jax.tree_multimap(lambda p, u: p + u, state.params['policy'], updates)
+    params = state.params
+    params = dict(policy=policy_params, value=value_params)
+    opt_state = state.opt_state
+    opt_state = dict(policy=policy_opt_state, value=value_opt_state)
+    state = state.replace(params=params, opt_state=opt_state)
+    return state, metrics
